@@ -16,7 +16,7 @@ namespace RealSharp
                 using (var engine = new QQmlApplicationEngine())
                 {
                     Qml.Net.Qml.RegisterType<EditorModel>("Editor");
-                    engine.Load("Main.qml");
+                    engine.Load("main.qml");
                     return app.Exec();
                 }
             }
