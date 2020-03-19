@@ -18,7 +18,7 @@ namespace RealSharp
                 _stringTokenList.Add(new List<string>());
             }
         }
-        private  List<string> _lineList = new List<string>()
+        private List<string> _lineList = new List<string>()
         {
             ""
         };
@@ -33,8 +33,8 @@ namespace RealSharp
         public int CursorY { get; set; }
         public int PrefferedCursorX { get; set; }
         public int SpacesPerTab = 4;
-        
- 
+
+
 
         public bool KeyEvent(string text, int keyCode)
         {
@@ -43,7 +43,7 @@ namespace RealSharp
             {
                 return false;
             }
-             if (text == "\t") //Tab
+            if (text == "\t") //Tab
             {
                 text = "";
                 text = text.PadRight(SpacesPerTab);
@@ -62,7 +62,7 @@ namespace RealSharp
             {
                 RemoveCharacter();
             }
-        
+
 
             else if (char.IsLetterOrDigit(text[0]) || char.IsWhiteSpace(text[0]) || char.IsPunctuation(text[0]) || char.IsSymbol(text[0]))
             {
@@ -84,7 +84,7 @@ namespace RealSharp
 
         public void MouseEventX(int xPos)
         {
-            if (xPos <= _lineList[CursorY].Length)
+            if (xPos <= _lineList[CursorY].Length && !(xPos < 0))
             {
                 CursorX = xPos;
 
@@ -109,6 +109,7 @@ namespace RealSharp
             }
         }
 
+
         public int LineCount()
         {
             return _lineList.Count;
@@ -119,7 +120,7 @@ namespace RealSharp
             return _stringTokenList[line].Count;
         }
 
-        public string Text(int line,int token)
+        public string Text(int line, int token)
         {
             return _stringTokenList[line][token];
         }
@@ -140,20 +141,20 @@ namespace RealSharp
                 _lineList.Insert(CursorY + 1, newLineText);
             }
 
-            if (CursorX !=_lineList[CursorY].Length)
+            if (CursorX != _lineList[CursorY].Length)
             {
                 _lineList[CursorY] = _lineList[CursorY].Remove(CursorX);
             }
-            
+
             CursorY++;
             //EnsureValidCursorX();
             CursorX = 0;
-           _stringTokenList.Add(new List<string>());
+            _stringTokenList.Add(new List<string>());
             for (int i = 0; i < LineCount(); i++)
             {
                 ParseLine(i);
             }
-           
+
         }
 
         private void RemoveCharacter()
@@ -188,15 +189,15 @@ namespace RealSharp
                 }
                 else if (CursorInMiddleOfBrace()) // handle cursor in middle of () et al
                 {
-                 
-                  
+
+
                 }
                 else
                 {
                     _lineList[CursorY] = str.Remove(CursorX - 1, 1);
                     CursorX--;
                 }
-               
+
             }
         }
 
@@ -237,7 +238,7 @@ namespace RealSharp
                         CursorX++;
                         PrefferedCursorX = CursorX;
                     }
-                    else if(CursorY + 1 < LineCount())
+                    else if (CursorY + 1 < LineCount())
                     {
                         CursorY++;
                         CursorX = PrefferedCursorX = 0;
@@ -262,7 +263,7 @@ namespace RealSharp
             }
         }
 
-       
+
         private enum States
         {
             NoState,
@@ -299,9 +300,9 @@ namespace RealSharp
 
                     if (ch == '/' && i + 1 < _lineList[line].Length && _lineList[line][i + 1] == '/')
                     {
-                            _stringTokenList[line].Add("//");
+                        _stringTokenList[line].Add("//");
                         i++;
-                            continue;     
+                        continue;
                     }
                     word += ch;
                     _stringTokenList[line].Add(word);
@@ -331,24 +332,24 @@ namespace RealSharp
                     continue;
                 }
 
-                if (i  + 1 == _lineList[line].Length && word != "")
+                if (i + 1 == _lineList[line].Length && word != "")
                 {
                     _stringTokenList[line].Add(word);
                 }
             }
         }
-        
+
         public string GetColor(string token)
         {
             if (_syntaxHighlighter.TypeSet.Contains(token))
             {
                 return _syntaxHighlighter.SyntaxMap["type"];
             }
-             if (_syntaxHighlighter.StatementSet.Contains(token))
+            if (_syntaxHighlighter.StatementSet.Contains(token))
             {
                 return _syntaxHighlighter.SyntaxMap["statement"];
             }
-             if (_syntaxHighlighter.ModifierSet.Contains(token))
+            if (_syntaxHighlighter.ModifierSet.Contains(token))
             {
                 return _syntaxHighlighter.SyntaxMap["modifier"];
             }
@@ -380,13 +381,23 @@ namespace RealSharp
                     _lineList[CursorY] = _lineList[CursorY].Insert(CursorX + 1, "]");
                     CursorX++;
                     break;
+                case '\"':
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, text);
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX + 1, "\"");
+                    CursorX++;
+                    break;
+                case '\'':
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, text);
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX + 1, "\'");
+                    CursorX++;
+                    break;
                 default:
                     return false;
             }
 
             return true;
         }
-        
+
         private bool CursorInMiddleOfBrace()
         {
             if (CursorX <= 0 || _lineList[CursorY].Length < 2 || CursorX == _lineList[CursorY].Length) return false;
@@ -398,6 +409,10 @@ namespace RealSharp
                     break;
                 case '[' when _lineList[CursorY][CursorX] == ']':
                     break;
+                case '\'' when _lineList[CursorY][CursorX] == '\'':
+                    break;
+                case '\"' when _lineList[CursorY][CursorX] == '\"':
+                    break;
                 default:
                     return false;
             }
@@ -408,7 +423,7 @@ namespace RealSharp
         }
         private void EnsureValidCursorX()
         {
-            
+
             CursorX = _lineList[CursorY].Length > 0 ? _lineList[CursorY].Length : 0;
         }
 

@@ -43,6 +43,8 @@ Rectangle {
 
             //Draw text
             var isComment = false;
+            var isString = false;
+            var Once = false;
             for(var i = 0; i < editorModel.lineCount(); i++)
             {
                 ctx.fillStyle = Qt.rgba(0.8, 0.8, 0.8, 1);
@@ -51,20 +53,39 @@ Rectangle {
                 var offSet = textBegin;
                 for(var j = 0; j < editorModel.tokensInLine(i); j++)
                 {
-                    var str = editorModel.text(i,j);
+                    var str = editorModel.text(i,j); // Getting the Word
+
+                    if(Once) // just to color the last : " or ' in the Line
+                        Once = false;
+
+                    // Input Checker
                     if(str === "//")
                         isComment = true;
+                    if(str === "\"" || str === "\'")
+                        isString = !isString;
+
+                    // Coloring the Text Based on the Input
                     ctx.fillStyle = editorModel.getColor(str);
                     if(isComment)
                         ctx.fillStyle = editorModel.getColor("comment");
+                    if(isString)
+                        ctx.fillStyle = editorModel.getColor("stringORchar");
+
+                    // Fixing the color of the last : " or '
+                    if(!isString && (str === "\"" || str === "\'"))
+                    {
+                        ctx.fillStyle = editorModel.getColor("stringORchar");
+                        Once = true;
+                    }
+
+                    // Writing the Input
                     ctx.fillText(str, offSet, lineHeight * (i+ 1) - (lineHeight / 2) + 3);
                     offSet += ctx.measureText(str).width;
                 }
                 isComment = false;
+                isString = false;
 
             }
-        }
-
 
         MouseArea {
             anchors.fill: parent
@@ -84,7 +105,7 @@ Rectangle {
 
     }
     Keys.onPressed: {
-        console.debug(event.key);
+        //console.debug(event.key);
 
         if(editorModel.keyEvent(event.text,event.key))
         {
@@ -107,4 +128,3 @@ Rectangle {
         }
     }
 }
-
