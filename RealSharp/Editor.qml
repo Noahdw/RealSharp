@@ -96,6 +96,9 @@ Rectangle {
 
             //===DRAW ALL TEXT===//
             var isComment = false;
+            var isString = false;
+            var Once = false;
+
             // pre-render offscreenm appears to be wrong
             if(editorModel.textRedrawNeeded)
             {
@@ -112,22 +115,40 @@ Rectangle {
                     offCtx.fillStyle = Qt.rgba(0.8, 0.8, 0.8, 1);
                     offCtx.fillText(line + 1,10,lineHeight * (line + 1) - (lineHeight / 2) + 3);
 
-                    var offSet = textBegin;
-                    offCtx.clearRect(textBegin, line * lineHeight, width, fontSize);
-                    var yDraw = lineHeight * (line + 1) - (lineHeight / 2) + 3;
-                    for( j = 0; j < editorModel.tokensInLine(line); j++)
-                    {
+                var offSet = textBegin;
+                for(var j = 0; j < editorModel.tokensInLine(i); j++)
+                {
+                    var str = editorModel.text(i,j); // Getting the Word
 
-                        var str = editorModel.text(line, j);
-                        if(str === "//")
-                            isComment = true;
-                        offCtx.fillStyle = editorModel.getColor(str);
-                        if(isComment)
-                            offCtx.fillStyle = editorModel.getColor("comment");
-                        offCtx.fillText(str, offSet, yDraw) ;
-                        offSet += str.length * characterWidth;
+                    if(Once) // just to color the last : " or ' in the Line
+                        Once = false;
+
+                    // Input Checker
+                    if(str === "//")
+                        isComment = true;
+                    if(str === "\"" || str === "\'")
+                        isString = !isString;
+
+                    // Coloring the Text Based on the Input
+                    ctx.fillStyle = editorModel.getColor(str);
+                    if(isComment)
+                        ctx.fillStyle = editorModel.getColor("comment");
+                    if(isString)
+                        ctx.fillStyle = editorModel.getColor("stringORchar");
+
+                    // Fixing the color of the last : " or '
+                    if(!isString && (str === "\"" || str === "\'"))
+                    {
+                        ctx.fillStyle = editorModel.getColor("stringORchar");
+                        Once = true;
                     }
-                    isComment = false;
+
+                    // Writing the Input
+                    ctx.fillText(str, offSet, lineHeight * (i+ 1) - (lineHeight / 2) + 3);
+                    offSet += ctx.measureText(str).width;
+                }
+                isComment = false;
+                isString = false;
 
                 }
                 editorModel.textRedrawNeeded = false;
@@ -227,4 +248,3 @@ Rectangle {
         }
     }
 }
-

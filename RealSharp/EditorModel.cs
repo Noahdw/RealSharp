@@ -20,8 +20,11 @@ namespace RealSharp
                 TextRedrawNeeded = true;
             }
         }
-        private List<string> _lineList = new List<string>();
-        
+        private List<string> _lineList = new List<string>()
+        {
+            ""
+        };
+
         private List<List<string>> _stringTokenList = new List<List<string>>()
         {
         new List<string>()
@@ -107,7 +110,7 @@ namespace RealSharp
 
         public void MouseEventX(int xPos)
         {
-            if (xPos <= _lineList[CursorY].Length)
+            if (xPos <= _lineList[CursorY].Length && !(xPos < 0))
             {
                 CursorX = xPos;
 
@@ -141,6 +144,7 @@ namespace RealSharp
             }
         }
 
+
         public int LineCount()
         {
             return _lineList.Count;
@@ -148,8 +152,9 @@ namespace RealSharp
 
         public int TokensInLine(int line)
         {
-            if (_stringTokenList.Count < line)
+            if (_stringTokenList.Count <= line)
             {
+                Console.WriteLine("TokensInLine on nonexistant line");
                 return 0;
             }
             return _stringTokenList[line].Count;
@@ -352,6 +357,11 @@ namespace RealSharp
         //This is not maintainable..
         private void ParseLine(int line)
         {
+            if (_stringTokenList.Count <= line )
+            {
+                Console.WriteLine("ParseLine on nonexistent line");
+                return;
+            }
             _stringTokenList[line].Clear();
             char ch;
             string word = "";
@@ -458,6 +468,16 @@ namespace RealSharp
                     _lineList[CursorY] = _lineList[CursorY].Insert(CursorX + 1, "]");
                     CursorX++;
                     break;
+                case '\"':
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, text);
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX + 1, "\"");
+                    CursorX++;
+                    break;
+                case '\'':
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, text);
+                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX + 1, "\'");
+                    CursorX++;
+                    break;
                 default:
                     return false;
             }
@@ -475,6 +495,10 @@ namespace RealSharp
                 case '{' when _lineList[CursorY][CursorX] == '}':
                     break;
                 case '[' when _lineList[CursorY][CursorX] == ']':
+                    break;
+                case '\'' when _lineList[CursorY][CursorX] == '\'':
+                    break;
+                case '\"' when _lineList[CursorY][CursorX] == '\"':
                     break;
                 default:
                     return false;
