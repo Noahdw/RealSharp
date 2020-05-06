@@ -1,19 +1,51 @@
 import QtQuick 2.9
-import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
-import QtQuick.Controls 2.3
+import QtQuick.Controls 2.4
 
 Rectangle{
-    TabView{
-        id: editorTabView
-        height: parent.height
-        anchors.fill: parent
-        Tab{
-            title: "temp.cs"
-            Editor{
-                width: parent.width
-                height: parent.height
-            }
+    color: Qt.rgba(0.1,0.1,0.1,1);
+    TabBar {
+        id: tabBar
+        width: parent.width
+        height: 30
+        TabButton {
+            width: 100
+            height: parent.height
+            text: qsTr("main.cs")
+        }
+        TabButton {
+            width: 100
+            height: parent.height
+            text: qsTr("test.cs")
+        }
+        TabButton {
+            width: 100
+            height: parent.height
+            text: qsTr("pro.cs")
+        }
+
+    }
+
+    StackLayout {
+        id: stackLayout
+        anchors.top: tabBar.bottom
+        width: parent.width
+        height: parent.height - tabBar.height
+        currentIndex: tabBar.currentIndex
+        onCurrentIndexChanged: {
+            stackLayout.itemAt(currentIndex).forceActiveFocus();
+        }
+        Editor{
+            width: parent.width
+            height: parent.height
+        }
+        Editor{
+            width: parent.width
+            height: parent.height
+        }
+        Editor{
+            width: parent.width
+            height: parent.height
         }
     }
 }

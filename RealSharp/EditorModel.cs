@@ -12,42 +12,56 @@ namespace RealSharp
         public void Init()
         {
             _stringTokenList = new List<List<string>>();
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < MinimumLines; i++)
             {
                 _lineList.Add("");
                 _stringTokenList.Add(new List<string>());
+                LinesToDraw.Add(i);
+                TextRedrawNeeded = true;
             }
         }
-        private  List<string> _lineList = new List<string>()
-        {
-            ""
-        };
-
+        private List<string> _lineList = new List<string>();
+        
         private List<List<string>> _stringTokenList = new List<List<string>>()
         {
         new List<string>()
         };
+
+        private Stack<Command> mCommandHistory = new Stack<Command>();
+
+        public const int MinimumLines = 30;
         private SyntaxHighlighter _syntaxHighlighter = new SyntaxHighlighter();
-        public const int MinimumLines = 1;
+        public List<string> CopyLines = new List<string>();
+        public List<int> LinesToDraw { get; }= new List<int>();
+        public List<int> TestTest { get; } = new List<int>(){1,2,3,4,5};
+
         public int CursorX { get; set; }
         public int CursorY { get; set; }
         public int PrefferedCursorX { get; set; }
         public int SpacesPerTab = 4;
-        
- 
+        public bool TextRedrawNeeded { get; set; }
+
+
+        public void IssueCommand(Command c)
+        {
+            mCommandHistory.Push(c);
+            c.Execute();
+        }
 
         public bool KeyEvent(string text, int keyCode)
         {
-            int CursorXAdjust = 1;
+          // TestTest.
+            TextRedrawNeeded = true;
+            int cursorXAdjust = 1;
             if (CursorY < 0 || CursorY > LineCount())
             {
                 return false;
             }
-             if (text == "\t") //Tab
+            if (text == "\t") //Tab
             {
                 text = "";
                 text = text.PadRight(SpacesPerTab);
-                CursorXAdjust = SpacesPerTab;
+                cursorXAdjust = SpacesPerTab;
             }
             if (text == null) // Likely a Fn key or arrow keys
             {
@@ -57,25 +71,34 @@ namespace RealSharp
             else if (text == "\r") //Enter key
             {
                 InsertNewLine();
+                TextRedrawNeeded = true;
             }
             else if (text == "\b") //Backspace
             {
-                RemoveCharacter();
+                // RemoveCharacter();
+                // TextRedrawNeeded = true;
+                RemoveCharText();
+                TextRedrawNeeded = true;
             }
-        
+
 
             else if (char.IsLetterOrDigit(text[0]) || char.IsWhiteSpace(text[0]) || char.IsPunctuation(text[0]) || char.IsSymbol(text[0]))
             {
-                if (!SpecialCase(text))
-                {
-                    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, text);
-                    CursorX += CursorXAdjust;
-                }
-                else
-                {
-                    ParseLine(CursorY);
-                    return true;
-                }
+                TextRedrawNeeded = true;
+                //TextRedrawNeeded = true;
+                //LinesToDraw.Add(CursorY);
+                //if (!SpecialCase(text))
+                //{
+                //    _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, text);
+                //    CursorX += cursorXAdjust;
+                //}
+                //else
+                //{
+                //    ParseLine(CursorY);
+                //    return true;
+                //}
+               // AddCharText(text);
+                IssueCommand(new AddTextCommand(text,this));
             }
 
             ParseLine(CursorY);
@@ -93,6 +116,11 @@ namespace RealSharp
             {
                 CursorX = _lineList[CursorY].Length;
             }
+
+            if (CursorX < 0)
+            {
+                CursorX = 0;
+            }
             PrefferedCursorX = CursorX;
 
         }
@@ -107,6 +135,10 @@ namespace RealSharp
             {
                 CursorY = yPos;
             }
+            if (CursorY < 0)
+            {
+                CursorY= 0;
+            }
         }
 
         public int LineCount()
@@ -116,13 +148,36 @@ namespace RealSharp
 
         public int TokensInLine(int line)
         {
+            if (_stringTokenList.Count < line)
+            {
+                return 0;
+            }
             return _stringTokenList[line].Count;
         }
 
-        public string Text(int line,int token)
+        public int CharactersInLine(int line)
+        {
+            if (_stringTokenList.Count < line ||  line > _stringTokenList.Count)
+            {
+                return 0;
+            }
+
+            var tokens = TokensInLine(line);
+            var chars = 0;
+            for (int i = 0; i < tokens; i++)
+            {
+                chars += Text(line, i).Length;
+            }
+
+            return chars;
+        }
+
+        public string Text(int line, int token)
         {
             return _stringTokenList[line][token];
         }
+
+
 
         private void InsertNewLine()
         {
@@ -140,43 +195,52 @@ namespace RealSharp
                 _lineList.Insert(CursorY + 1, newLineText);
             }
 
-            if (CursorX !=_lineList[CursorY].Length)
+            if (CursorX != _lineList[CursorY].Length)
             {
                 _lineList[CursorY] = _lineList[CursorY].Remove(CursorX);
             }
-            
+
             CursorY++;
             //EnsureValidCursorX();
             CursorX = 0;
-           _stringTokenList.Add(new List<string>());
+            _stringTokenList.Add(new List<string>());
             for (int i = 0; i < LineCount(); i++)
             {
+                LinesToDraw.Add(i);
                 ParseLine(i);
             }
-           
+
         }
 
         private void RemoveCharacter()
         {
             var str = _lineList[CursorY];
-            //If empty line remove the line
+            //If empty line remove the whole line
             if (str == null || str == "\r" || str == "")
             {
-                if (LineCount() == MinimumLines)
-                {
-                    return;
-                }
                 _lineList.RemoveAt(CursorY);
-                if (CursorY <= 0) return;
-                CursorY--;
-                EnsureValidCursorX();
+                
+                if (LineCount() < MinimumLines)
+                {
+                    _lineList.Add("");
+                }
 
+                if (CursorY != 0)
+                    CursorY--;
+
+                for (int i = 0; i < LineCount(); i++)
+                {
+                    LinesToDraw.Add(i);
+                    ParseLine(i);
+                }
+                EnsureValidCursorX();
             }
             else //remove single chracter
             {
-                if (CursorX == 0)
+                if (CursorX == 0) // remove line and put remaining characters on line above it
                 {
                     if (LineCount() == MinimumLines) return;
+                    if (CursorY <= 0) return;
                     var text = _lineList[CursorY];
                     var newCursorX = _lineList[CursorY - 1].Length;
                     _lineList[CursorY - 1] += text;
@@ -184,19 +248,33 @@ namespace RealSharp
                     if (CursorY <= 0) return;
                     CursorY--;
                     CursorX = newCursorX;
-
+                    for (int i = 0; i < LineCount(); i++)
+                    {
+                        LinesToDraw.Add(i);
+                        ParseLine(i);
+                    }
                 }
-                else if (CursorInMiddleOfBrace()) // handle cursor in middle of () et al
+                // handle cursor in middle of () et al
+                else if (CursorInMiddleOfBrace()) 
                 {
-                 
-                  
+                    LinesToDraw.Add(CursorY);
                 }
+                //Remove single character
                 else
                 {
+                    LinesToDraw.Add(CursorY);
                     _lineList[CursorY] = str.Remove(CursorX - 1, 1);
                     CursorX--;
                 }
-               
+
+            }
+        }
+
+        public void UndoCommand()
+        {
+            if (mCommandHistory.TryPop(out var c) )
+            {
+                c.undo();
             }
         }
 
@@ -237,7 +315,7 @@ namespace RealSharp
                         CursorX++;
                         PrefferedCursorX = CursorX;
                     }
-                    else if(CursorY + 1 < LineCount())
+                    else if (CursorY + 1 < LineCount())
                     {
                         CursorY++;
                         CursorX = PrefferedCursorX = 0;
@@ -262,7 +340,7 @@ namespace RealSharp
             }
         }
 
-       
+
         private enum States
         {
             NoState,
@@ -271,7 +349,7 @@ namespace RealSharp
             FunctionDefinitionState,
 
         }
-        //private int State = States.NoState;
+        //This is not maintainable..
         private void ParseLine(int line)
         {
             _stringTokenList[line].Clear();
@@ -299,9 +377,9 @@ namespace RealSharp
 
                     if (ch == '/' && i + 1 < _lineList[line].Length && _lineList[line][i + 1] == '/')
                     {
-                            _stringTokenList[line].Add("//");
+                        _stringTokenList[line].Add("//");
                         i++;
-                            continue;     
+                        continue;
                     }
                     word += ch;
                     _stringTokenList[line].Add(word);
@@ -331,24 +409,24 @@ namespace RealSharp
                     continue;
                 }
 
-                if (i  + 1 == _lineList[line].Length && word != "")
+                if (i + 1 == _lineList[line].Length && word != "")
                 {
                     _stringTokenList[line].Add(word);
                 }
             }
         }
-        
+
         public string GetColor(string token)
         {
             if (_syntaxHighlighter.TypeSet.Contains(token))
             {
                 return _syntaxHighlighter.SyntaxMap["type"];
             }
-             if (_syntaxHighlighter.StatementSet.Contains(token))
+            if (_syntaxHighlighter.StatementSet.Contains(token))
             {
                 return _syntaxHighlighter.SyntaxMap["statement"];
             }
-             if (_syntaxHighlighter.ModifierSet.Contains(token))
+            if (_syntaxHighlighter.ModifierSet.Contains(token))
             {
                 return _syntaxHighlighter.SyntaxMap["modifier"];
             }
@@ -386,7 +464,7 @@ namespace RealSharp
 
             return true;
         }
-        
+
         private bool CursorInMiddleOfBrace()
         {
             if (CursorX <= 0 || _lineList[CursorY].Length < 2 || CursorX == _lineList[CursorY].Length) return false;
@@ -406,12 +484,113 @@ namespace RealSharp
             CursorX--;
             return true;
         }
+
+        public void CopyText(int initX, int initY)
+        {
+            CopyLines.Clear();
+            var lines = Math.Abs(initY - CursorY);
+            var direction = initY - CursorY < 0 ? 1 : -1;
+            for (int i = 0; i <= lines; i++)
+            {
+               
+                var charactersInLine = CharactersInLine(initY + i * direction);
+                var lineWidth = charactersInLine;
+                var selectStart = 0;
+                if (i == 0)
+                {
+                    lineWidth = CursorX > charactersInLine ? charactersInLine : initX;
+                    if (lines == 0) 
+                    {
+                        selectStart = CursorX;
+                        lineWidth = (initX - CursorX);
+                    }
+                    else if (direction == 1)
+                    {
+                        selectStart = initX;
+                        lineWidth = charactersInLine - initX;
+                    }
+                }
+                else if (initY + i * direction == CursorY)
+                {
+                    if (direction == 1)
+                    {
+                        lineWidth = CursorX;
+                    }
+                    else
+                    {
+                        selectStart = CursorX;
+                        lineWidth = charactersInLine - CursorX;
+                    }
+                }
+
+                var str = _lineList[initY + i * direction];
+                CopyLines.Add(str.Substring(selectStart,lineWidth));
+            }
+            if(direction == 1)
+                CopyLines.Reverse();
+        }
+
+        public void PasteText()
+        {
+            TextRedrawNeeded = true;
+            var tempCursor = CursorY;
+            for (int i = 0; i < CopyLines.Count; i++)
+            {
+                if (CursorY + i >= LineCount())
+                {
+                    _lineList.Add("");
+                    _stringTokenList.Add(new List<string>());
+                }
+                var insertPos = i == 0 ? CursorX : 0;
+
+                string newString = _lineList[CursorY + i].Insert(insertPos, CopyLines[i]);
+                _lineList[CursorY + i] = newString;
+                ParseLine(CursorY + i);
+                LinesToDraw.Add(CursorY + i);
+            }
+        }
+
         private void EnsureValidCursorX()
         {
-            
+
             CursorX = _lineList[CursorY].Length > 0 ? _lineList[CursorY].Length : 0;
         }
 
+        public void ClearLinesToDraw()
+        {
+            LinesToDraw.Clear();
+        }
+
+        public int NumLinesToDraw()
+        {
+            return LinesToDraw.Count;
+        }
+
+        public int GetLineToDraw(int index)
+        {
+            return LinesToDraw[index];
+        }
+
+        public void AddCharText(string c)
+        {
+            TextRedrawNeeded = true;
+            LinesToDraw.Add(CursorY);
+            if (!SpecialCase(c))
+            {
+                _lineList[CursorY] = _lineList[CursorY].Insert(CursorX, c);
+                CursorX++;
+            }
+            else
+            {
+                ParseLine(CursorY);
+            }
+        }
+
+        public void RemoveCharText()
+        {
+            RemoveCharacter();
+            TextRedrawNeeded = true;
+        }
     }
 
 }

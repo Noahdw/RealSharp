@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Qml.Net" Version="0.6.2" />
-    <PackageReference Include="Qml.Net.WindowsBinaries" Version="0.6.2" />
+    <PackageReference Include="Qml.Net" Version="0.8.0" />
+    <PackageReference Include="Qml.Net.WindowsBinaries" Version="0.8.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +28,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Main.qml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="MenuRibbon.qml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ProjectExplorer.qml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

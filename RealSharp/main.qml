@@ -10,7 +10,15 @@ ApplicationWindow {
     visible: true
     title: "RealSharp"
 
-	Editor{
+    MenuRibbon{
+        id:menuRibbon
+        width: 60
+        height: parent.height
+    }
+
+    EditorTabView{
+        anchors.left: menuRibbon.right
+        id: editorTabView
         width: parent.width
         height: parent.height
     }
