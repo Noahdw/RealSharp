@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Qml.Net" Version="0.8.0" />
-    <PackageReference Include="Qml.Net.WindowsBinaries" Version="0.8.0" />
+    <PackageReference Include="Qml.Net" Version="0.10.1" />
+    <PackageReference Include="Qml.Net.WindowsBinaries" Version="0.10.1" />
   </ItemGroup>
 
   <ItemGroup>

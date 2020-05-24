@@ -17,7 +17,28 @@ namespace RealSharp
             InitSyntaxMap();
             InitTypeSet();
             InitModifierSet();
+        }
 
+        public string GetColor(string token)
+        {
+            if (TypeSet.Contains(token))
+            {
+                return SyntaxMap["type"];
+            }
+            if (StatementSet.Contains(token))
+            {
+                return SyntaxMap["statement"];
+            }
+            if (ModifierSet.Contains(token))
+            {
+                return SyntaxMap["modifier"];
+            }
+
+            if (SyntaxMap.ContainsKey(token))
+            {
+                return SyntaxMap[token];
+            }
+            return SyntaxMap["default"];
         }
 
         private void InitSyntaxMap()
@@ -75,7 +96,6 @@ namespace RealSharp
             ModifierSet.Add("public");
             ModifierSet.Add("static");
             ModifierSet.Add("const");
-
         }
 
         private void InitStatementSet()
